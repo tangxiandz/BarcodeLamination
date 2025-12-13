@@ -1,0 +1,45 @@
+﻿@page
+@model BarcodeLaminationWeb.Pages.IndexModel
+@{
+    ViewData["Title"] = "首页";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-light p-5 rounded-3">
+            <h1 class="display-4">欢迎使用条码覆膜管理系统</h1>
+            <p class="lead">本系统用于管理覆膜、上料、下料等生产工序的条码追踪</p>
+            <hr class="my-4">
+        </div>
+    </div>
+</div>
+
+<div class="row" style="margin-top:1em;">
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-boxes"></i> 物料管理</h5>
+                <p class="card-text">管理成品和面料的基础信息</p>
+                <a href="/Materials" class="btn btn-light">进入管理</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-history"></i> 记录查询</h5>
+                <p class="card-text">查询覆膜、上料、下料记录</p>
+                <a href="/Records" class="btn btn-light">查看记录</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-print"></i> 下料打印</h5>
+                <p class="card-text">选择上料记录进行下料打印</p>
+                <a href="/Unloading" class="btn btn-light">开始下料</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,398 @@
+﻿@page
+@model BarcodeLaminationWeb.Pages.UnloadingModel
+@{
+    ViewData["Title"] = "下料打印";
+}
+
+<!-- ... 头部代码保持不变 ... -->
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">有效上料记录列表</h5>
+                <div>
+                    <span class="badge bg-primary" id="selectedCount">已选择 0 条记录</span>
+                    <span class="badge bg-info ms-2" id="quantityInfo">累计数量: 0</span>
+                    <span class="badge bg-secondary ms-2" id="packingQuantityInfo">装箱数量: 0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 物料筛选区域 -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form method="get" class="row g-2">
+                            <div class="col-md-8">
+                                <label class="form-label">选择物料</label>
+                                <select asp-for="SelectedMaterialCode" class="form-select" id="materialSelect">
+                                    <option value="">全部物料</option>
+                                    @foreach (var material in Model.Materials)
+                                    {
+                                        <option value="@material.ProductERPCode"
+                                                data-packing-quantity="@material.PackingQuantity">
+                                            @material.ProductPartDescription (@material.ProductPartDescription) - 装箱: @material.PackingQuantity
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-outline-primary me-2">筛选</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearFilter()">清除</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end justify-content-end">
+                        <!-- 下料完毕按钮 -->
+                        <form method="post" asp-page-handler="Complete" id="completeForm" style="display: inline;">
+                            <input type="hidden" name="CompleteFeedingRecordId" id="completeRecordIdInput" />
+                            <button type="submit" class="btn btn-success me-2" id="completeButton" disabled>
+                                <i class="fas fa-check-circle"></i> 下料完毕
+                            </button>
+                        </form>
+
+                        <!-- 下料打印按钮 -->
+                        <form method="post" id="printForm" style="display: inline;">
+                            <button type="submit" class="btn btn-primary" id="printButton" disabled>
+                                <i class="fas fa-print"></i> 下料打印
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 记录列表 -->
+                <form method="post" id="unloadingForm">
+                    @if (Model.ValidFeedingRecords.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="feedingRecordsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="50px">
+                                            <input type="checkbox" id="selectAll" class="form-check-input" />
+                                        </th>
+                                        <th>成品ERP号</th>
+                                        <th>面料ERP号</th>
+                                        <th>刀模编号</th>
+                                        <th>覆膜次数</th>
+                                        <th>覆膜数量</th>
+                                        <th>上料时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var record in Model.ValidFeedingRecords)
+                                    {
+                                        <tr data-material-code="@record.ProductERPCode">
+                                            <td>
+                                                <input type="checkbox" name="SelectedFeedingRecordIds"
+                                                       value="@record.Id" class="form-check-input record-checkbox"
+                                                       data-quantity="@record.FilmCoatingQuantity"
+                                                       data-material-code="@record.ProductERPCode" />
+                                            </td>
+                                            <td>@record.ProductERPCode</td>
+
+                                            <td>
+                                                <span class="text-truncate d-inline-block" style="max-width: 150px;"
+                                                      title="@record.FilmCoatingQRCode">
+                                                    @record.FilmCoatingQRCode
+                                                </span>
+                                            </td>
+                                            <td>@record.MoldNumber</td>
+                                            <td>@record.FilmCoatingCount</td>
+                                            <td>@record.FilmCoatingQuantity</td>
+                                            <td>@record.FeedingTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle"></i> 暂无有效的上料记录
+                        </div>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 创建物料装箱数量映射
+        var materialPackingQuantities = {
+        @foreach (var material in Model.Materials)
+        {
+            @: "@material.ProductERPCode": @material.PackingQuantity,
+        }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 自动关闭警告框
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+
+            // 元素引用
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const quantityInfo = document.getElementById('quantityInfo');
+            const packingQuantityInfo = document.getElementById('packingQuantityInfo');
+            const printButton = document.getElementById('printButton');
+            const completeButton = document.getElementById('completeButton');
+            const materialSelect = document.getElementById('materialSelect');
+            const completeForm = document.getElementById('completeForm');
+            const completeRecordIdInput = document.getElementById('completeRecordIdInput');
+            const printForm = document.getElementById('printForm');
+            const unloadingForm = document.getElementById('unloadingForm');
+
+            // 当前选中的物料和装箱数量
+            let currentMaterialCode = '';
+            let currentPackingQuantity = 0;
+            let selectedQuantity = 0;
+
+            // 获取可见的复选框
+            function getVisibleCheckboxes() {
+                return Array.from(checkboxes).filter(checkbox => {
+                    const row = checkbox.closest('tr');
+                    return row.style.display !== 'none';
+                });
+            }
+
+            // 更新选中信息
+            function updateSelectedInfo() {
+                const visibleCheckboxes = getVisibleCheckboxes();
+                const selected = visibleCheckboxes.filter(checkbox => checkbox.checked);
+                const selectedCountValue = selected.length;
+
+                // 计算累计数量
+                selectedQuantity = 0;
+                selected.forEach(checkbox => {
+                    selectedQuantity += parseFloat(checkbox.dataset.quantity) || 0;
+                });
+
+                // 更新显示
+                selectedCount.textContent = `已选择 ${selectedCountValue} 条记录`;
+                quantityInfo.textContent = `累计数量: ${selectedQuantity.toFixed(2)}`;
+
+                // 验证数量
+                validateQuantity(selected);
+
+                // 更新按钮状态 - 只能选择一条记录
+                printButton.disabled = selectedCountValue !== 1;
+                completeButton.disabled = selectedCountValue !== 1;
+            }
+
+            // 验证数量是否超过装箱数量
+            function validateQuantity(selected) {
+                if (selected.length === 0) {
+                    quantityInfo.className = 'badge bg-info';
+                    packingQuantityInfo.textContent = '装箱数量: 0';
+                    packingQuantityInfo.className = 'badge bg-secondary ms-2';
+                    return;
+                }
+
+                // 检查是否选择了同一物料
+                const firstMaterialCode = selected[0].dataset.materialCode;
+                const allSameMaterial = selected.every(checkbox =>
+                    checkbox.dataset.materialCode === firstMaterialCode
+                );
+
+                if (!allSameMaterial) {
+                    quantityInfo.className = 'badge bg-warning';
+                    packingQuantityInfo.textContent = '装箱数量: 0';
+                    packingQuantityInfo.className = 'badge bg-secondary ms-2';
+                    quantityInfo.textContent = `累计数量: ${selectedQuantity.toFixed(2)} (请选择同一物料)`;
+                    return;
+                }
+
+                // 从物料映射中获取装箱数量
+                currentMaterialCode = firstMaterialCode;
+                currentPackingQuantity = materialPackingQuantities[firstMaterialCode] || 0;
+
+                // 更新装箱数量显示
+                packingQuantityInfo.textContent = `装箱数量: ${currentPackingQuantity}`;
+
+                if (selectedQuantity > currentPackingQuantity) {
+                    quantityInfo.className = 'badge bg-danger';
+                    packingQuantityInfo.className = 'badge bg-danger ms-2';
+                    quantityInfo.textContent = `累计数量: ${selectedQuantity.toFixed(2)} (超过装箱数量 ${currentPackingQuantity})`;
+                } else {
+                    quantityInfo.className = 'badge bg-success';
+                    packingQuantityInfo.className = 'badge bg-success ms-2';
+                    quantityInfo.textContent = `累计数量: ${selectedQuantity.toFixed(2)}/${currentPackingQuantity}`;
+                }
+            }
+
+            // 全选/反选功能
+            selectAll.addEventListener('change', function() {
+                const visibleCheckboxes = getVisibleCheckboxes();
+                visibleCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectedInfo();
+            });
+
+            // 单个复选框事件
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    // 更新全选复选框状态
+                    const visibleCheckboxes = getVisibleCheckboxes();
+                    const allChecked = visibleCheckboxes.every(cb => cb.checked);
+                    const someChecked = visibleCheckboxes.some(cb => cb.checked);
+
+                    selectAll.checked = allChecked;
+                    selectAll.indeterminate = someChecked && !allChecked;
+
+                    updateSelectedInfo();
+                });
+            });
+
+            // 物料筛选
+            materialSelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                const rows = document.querySelectorAll('#feedingRecordsTable tbody tr');
+
+                rows.forEach(row => {
+                    if (!selectedValue || row.dataset.materialCode === selectedValue) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // 清空选择
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                // 更新全选复选框状态
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+                updateSelectedInfo();
+
+                // 更新装箱数量显示
+                if (selectedValue) {
+                    const packingQuantity = materialPackingQuantities[selectedValue] || 0;
+                    packingQuantityInfo.textContent = `装箱数量: ${packingQuantity}`;
+                } else {
+                    packingQuantityInfo.textContent = '装箱数量: 0';
+                }
+            });
+
+            // 下料打印表单提交
+            printForm.addEventListener('submit', function(e) {
+                e.preventDefault(); // 阻止默认提交
+
+                const visibleCheckboxes = getVisibleCheckboxes();
+                const selected = visibleCheckboxes.filter(checkbox => checkbox.checked);
+
+                if (selected.length === 0) {
+                    alert('请选择一条上料记录！');
+                    return;
+                }
+
+                // 只能选择一条记录
+                if (selected.length > 1) {
+                    alert('打印操作只能选择一条记录！');
+                    return;
+                }
+
+                // 显示确认对话框
+                if (confirm(`确定要对选中的记录执行下料打印吗？`)) {
+                    // 显示加载状态
+                    printButton.disabled = true;
+                    printButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
+
+                    // 设置隐藏字段的值
+                    // 需要将选中的记录ID传递给表单
+                    const selectedIds = [];
+                    selected.forEach(checkbox => {
+                        selectedIds.push(parseInt(checkbox.value));
+                    });
+
+                    // 添加隐藏字段到打印表单
+                    selectedIds.forEach(id => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'SelectedFeedingRecordIds';
+                        input.value = id;
+                        printForm.appendChild(input);
+                    });
+
+                    // 提交表单
+                    printForm.submit();
+                }
+            });
+
+            // 下料完毕表单提交
+            completeForm.addEventListener('submit', function(e) {
+                e.preventDefault(); // 阻止默认提交
+
+                const visibleCheckboxes = getVisibleCheckboxes();
+                const selected = visibleCheckboxes.filter(checkbox => checkbox.checked);
+
+                if (selected.length === 0) {
+                    alert('请选择一条上料记录！');
+                    return;
+                }
+
+                // 只能选择一条记录
+                if (selected.length > 1) {
+                    alert('下料完毕操作只能选择一条记录！');
+                    return;
+                }
+
+                const recordId = selected[0].value;
+
+                // 显示确认对话框
+                if (confirm(`确定标记该记录为下料完毕吗？`)) {
+                    // 设置隐藏字段的值
+                    completeRecordIdInput.value = recordId;
+
+                    // 显示加载状态
+                    completeButton.disabled = true;
+                    completeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
+
+                    // 提交表单
+                    completeForm.submit();
+                }
+            });
+
+            // 初始化
+            updateSelectedInfo();
+
+            // 如果URL中有选中物料，自动触发筛选
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedMaterial = urlParams.get('SelectedMaterialCode');
+            if (selectedMaterial) {
+                materialSelect.value = selectedMaterial;
+                materialSelect.dispatchEvent(new Event('change'));
+            }
+        });
+
+        function clearFilter() {
+            const materialSelect = document.getElementById('materialSelect');
+            materialSelect.value = '';
+
+            // 触发change事件
+            const event = new Event('change');
+            materialSelect.dispatchEvent(event);
+
+            // 清空选择
+            document.querySelectorAll('.record-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            // 更新URL，移除筛选参数
+            const url = new URL(window.location);
+            url.searchParams.delete('SelectedMaterialCode');
+            window.history.replaceState({}, '', url);
+        }
+    </script>
+}

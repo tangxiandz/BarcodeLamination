@@ -1,0 +1,322 @@
+﻿@page
+@model BarcodeLaminationWeb.Pages.MaterialsModel
+@{
+    ViewData["Title"] = "物料管理";
+}
+<style>
+    .btn-group-sm > .btn, .btn-sm {
+        padding: .15rem .6rem;
+        font-size: .875rem;
+        border-radius: .2rem;
+        margin-right: 5px;
+    }
+</style>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h4"><i class="fas fa-boxes"></i> 物料管理</h1>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert @(Model.ShowSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+        <i class="fas @(Model.ShowSuccess ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- 搜索和添加按钮 -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="get" class="d-flex">
+            <input type="text" class="form-control me-2" placeholder="搜索物料..." name="searchTerm" value="@Model.SearchTerm">
+            <button type="submit" class="btn btn-outline-primary" style="width: 100px;">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <a href="/Materials" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-times"></i> 清除
+                </a>
+            }
+        </form>
+    </div>
+    <div class="col-md-6 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+            <i class="fas fa-plus"></i> 添加物料
+        </button>
+    </div>
+</div>
+
+<!-- 分页信息 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted">
+                    显示第 @((Model.MaterialsResponse.PageNumber - 1) * Model.MaterialsResponse.PageSize + 1) 到
+                    @Math.Min(Model.MaterialsResponse.PageNumber * Model.MaterialsResponse.PageSize, Model.MaterialsResponse.TotalCount) 条，
+                    共 @Model.MaterialsResponse.TotalCount 条记录
+                </span>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="me-2 text-muted">每页显示：</span>
+                <select class="form-select form-select-sm" style="width: auto;" onchange="changePageSize(this.value)">
+                    <option value="5" selected="@(Model.PageSize == 5)">5</option>
+                    <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                    <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                    <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">物料列表</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.MaterialsResponse.Data.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>成品ERP号</th>
+                                    <th>成品描述</th>
+                                    <th>刀模号</th>
+                                    <th>装箱数量</th>
+                                    <th>面料卷数</th>
+                                    <th>面料ERP号</th>
+                                    <th>面料描述</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var material in Model.MaterialsResponse.Data)
+                                {
+                                    <tr>
+                                        <td><strong>@material.ProductERPCode</strong></td>
+                                        <td>@material.ProductPartDescription</td>
+                                        <td>@material.MoldNumber</td>
+                                        <td>@material.PackingQuantity</td>
+                                        <td>@material.FabricRollCount</td>
+                                        <td>@material.FabricERPCode</td>
+                                        <td>@material.FabricPartDescription</td>
+                                        <td>@material.CreateTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary btn-edit"
+                                                        data-id="@material.Id"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#editMaterialModal"
+                                                        title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form method="post" asp-page-handler="Delete" asp-route-id="@material.Id"
+                                                      class="d-inline" onsubmit="return confirm('确定要删除这个物料吗？');">
+                                                    <button type="submit" class="btn btn-outline-danger" title="删除">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页控件 -->
+                    @if (Model.MaterialsResponse.TotalPages > 1)
+                    {
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item @(Model.MaterialsResponse.PageNumber == 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Page("", new { searchTerm = Model.SearchTerm, currentPage = Model.MaterialsResponse.PageNumber - 1, pageSize = Model.PageSize })">上一页</a>
+                                </li>
+
+                                @for (int i = 1; i <= Model.MaterialsResponse.TotalPages; i++)
+                                {
+                                    <li class="page-item @(i == Model.MaterialsResponse.PageNumber ? "active" : "")">
+                                        <a class="page-link" href="@Url.Page("", new { searchTerm = Model.SearchTerm, currentPage = i, pageSize = Model.PageSize })">@i</a>
+                                    </li>
+                                }
+
+                                <li class="page-item @(Model.MaterialsResponse.PageNumber == Model.MaterialsResponse.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Page("", new { searchTerm = Model.SearchTerm, currentPage = Model.MaterialsResponse.PageNumber + 1, pageSize = Model.PageSize })">下一页</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 暂无物料数据
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加物料模态框 -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Add">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addMaterialModalLabel">添加新物料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">成品ERP号 *</label>
+                            <input type="text" class="form-control" asp-for="NewMaterial.ProductERPCode" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">成品描述 *</label>
+                            <input type="text" class="form-control" asp-for="NewMaterial.ProductPartDescription" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">刀模号 *</label>
+                            <input type="text" class="form-control" asp-for="NewMaterial.MoldNumber" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">装箱数量</label>
+                            <input type="number" class="form-control" asp-for="NewMaterial.PackingQuantity" value="1" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">面料卷数</label>
+                            <input type="number" class="form-control" asp-for="NewMaterial.FabricRollCount" value="3" min="1" max="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">面料ERP号 *</label>
+                            <input type="text" class="form-control" asp-for="NewMaterial.FabricERPCode" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">面料描述 *</label>
+                            <input type="text" class="form-control" asp-for="NewMaterial.FabricPartDescription" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加物料</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑物料模态框 -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1" aria-labelledby="editMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit">
+                <input type="hidden" asp-for="EditMaterialId" id="editMaterialId" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editMaterialModalLabel">编辑物料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">成品ERP号 *</label>
+                            <input type="text" class="form-control" asp-for="EditMaterial.ProductERPCode" id="editProductERPCode" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">成品描述 *</label>
+                            <input type="text" class="form-control" asp-for="EditMaterial.ProductPartDescription" id="editProductPartDescription" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">刀模号 *</label>
+                            <input type="text" class="form-control" asp-for="EditMaterial.MoldNumber" id="editMoldNumber" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">装箱数量</label>
+                            <input type="number" class="form-control" asp-for="EditMaterial.PackingQuantity" id="editPackingQuantity" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">面料卷数</label>
+                            <input type="number" class="form-control" asp-for="EditMaterial.FabricRollCount" id="editFabricRollCount" min="1" max="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">面料ERP号 *</label>
+                            <input type="text" class="form-control" asp-for="EditMaterial.FabricERPCode" id="editFabricERPCode" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">面料描述 *</label>
+                            <input type="text" class="form-control" asp-for="EditMaterial.FabricPartDescription" id="editFabricPartDescription" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changePageSize(pageSize) {
+            window.location.href = `?searchTerm=@Model.SearchTerm&currentPage=1&pageSize=${pageSize}`;
+        }
+
+        // 编辑按钮点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const editButtons = document.querySelectorAll('.btn-edit');
+
+            editButtons.forEach(button => {
+                button.addEventListener('click', async function() {
+                    const materialId = this.getAttribute('data-id');
+
+                    try {
+                        // 显示加载中
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        this.disabled = true;
+
+                        // 获取物料详情
+                        const response = await fetch(`/Materials?handler=MaterialDetails&id=${materialId}`);
+                        const material = await response.json();
+
+                        // 填充表单
+                        document.getElementById('editMaterialId').value = material.id;
+                        document.getElementById('editProductERPCode').value = material.productERPCode;
+                        document.getElementById('editProductPartDescription').value = material.productPartDescription;
+                        document.getElementById('editMoldNumber').value = material.moldNumber;
+                        document.getElementById('editPackingQuantity').value = material.packingQuantity;
+                        document.getElementById('editFabricRollCount').value = material.fabricRollCount;
+                        document.getElementById('editFabricERPCode').value = material.fabricERPCode;
+                        document.getElementById('editFabricPartDescription').value = material.fabricPartDescription;
+
+                    } catch (error) {
+                        console.error('获取物料详情失败:', error);
+                        alert('获取物料详情失败，请重试！');
+                    } finally {
+                        // 恢复按钮状态
+                        this.innerHTML = '<i class="fas fa-edit"></i>';
+                        this.disabled = false;
+                    }
+                });
+            });
+
+            // 自动关闭警告框
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+    </script>
+}

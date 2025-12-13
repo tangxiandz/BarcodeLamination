@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarcodeLaminationAPI", "BarcodeLaminationAPI\BarcodeLaminationAPI.csproj", "{CFAEEBB2-F572-45F5-A969-E83BE3356491}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarcodeLaminationWeb", "BarcodeLaminationWeb\BarcodeLaminationWeb.csproj", "{6540A5F2-0DC6-4380-9885-3C8B15A6EA4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarcodeLaminationModel", "BarcodeLaminationModel\BarcodeLaminationModel.csproj", "{6E6F840C-4967-4469-B1EC-2C83468E3A5D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarcodeLaminationPrint", "BarcodeLamination\BarcodeLaminationPrint.csproj", "{B6B1E3DE-A864-72CC-54C1-A33551D8C7B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MistakeProofing.Printing", "MistakeProofing.Printing\MistakeProofing.Printing.csproj", "{E938D4A6-AE78-AF1E-AD5E-388DFCF86411}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFAEEBB2-F572-45F5-A969-E83BE3356491}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFAEEBB2-F572-45F5-A969-E83BE3356491}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFAEEBB2-F572-45F5-A969-E83BE3356491}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFAEEBB2-F572-45F5-A969-E83BE3356491}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6540A5F2-0DC6-4380-9885-3C8B15A6EA4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6540A5F2-0DC6-4380-9885-3C8B15A6EA4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6540A5F2-0DC6-4380-9885-3C8B15A6EA4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6540A5F2-0DC6-4380-9885-3C8B15A6EA4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E6F840C-4967-4469-B1EC-2C83468E3A5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E6F840C-4967-4469-B1EC-2C83468E3A5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E6F840C-4967-4469-B1EC-2C83468E3A5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E6F840C-4967-4469-B1EC-2C83468E3A5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6B1E3DE-A864-72CC-54C1-A33551D8C7B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6B1E3DE-A864-72CC-54C1-A33551D8C7B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6B1E3DE-A864-72CC-54C1-A33551D8C7B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6B1E3DE-A864-72CC-54C1-A33551D8C7B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E938D4A6-AE78-AF1E-AD5E-388DFCF86411}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E938D4A6-AE78-AF1E-AD5E-388DFCF86411}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E938D4A6-AE78-AF1E-AD5E-388DFCF86411}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E938D4A6-AE78-AF1E-AD5E-388DFCF86411}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {76C526EE-13ED-4A3C-9A03-7EBFEC13F349}
+	EndGlobalSection
+EndGlobal

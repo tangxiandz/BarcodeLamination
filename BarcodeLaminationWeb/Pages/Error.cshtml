@@ -1,0 +1,21 @@
+﻿@page
+@model BarcodeLaminationWeb.Pages.ErrorModel
+@{
+    ViewData["Title"] = "错误";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="card mt-5">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-5x text-warning mb-4"></i>
+                <h1 class="display-4">出错了</h1>
+                <p class="lead">抱歉，系统遇到了一个错误。</p>
+                <p>@Model.ErrorMessage</p>
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> 返回首页
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
