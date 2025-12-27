@@ -73,8 +73,8 @@
                                         <th>成品ERP号</th>
                                         <th>面料ERP号</th>
                                         <th>刀模编号</th>
-                                        <th>覆膜次数</th>
-                                        <th>覆膜数量</th>
+                                        <th>装箱数量</th>
+                                        <th>面料卷数</th>
                                         <th>上料时间</th>
                                     </tr>
                                 </thead>
@@ -97,8 +97,8 @@
                                                 </span>
                                             </td>
                                             <td>@record.MoldNumber</td>
-                                            <td>@record.FilmCoatingCount</td>
                                             <td>@record.FilmCoatingQuantity</td>
+                                            <td>@record.FilmCoatingCount</td>
                                             <td>@record.FeedingTime.ToString("yyyy-MM-dd HH:mm")</td>
                                         </tr>
                                     }
