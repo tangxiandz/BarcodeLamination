@@ -32,6 +32,12 @@ namespace BarcodeLaminationPrint
 
         private int _printedCount = 0;
         private readonly string _templateDirectory;
+        // 打印类型枚举
+        private enum PrintType
+        {
+            FilmCoating,  // 覆膜打印
+            Unloading     // 下料打印
+        }
 
         public MainForm()
         {
@@ -124,6 +130,16 @@ namespace BarcodeLaminationPrint
 
             return null;
         }
+        /// <summary>
+        /// 获取当前打印类型
+        /// </summary>
+        private PrintType GetCurrentPrintType()
+        {
+            return rdoFilmCoating.Checked ? PrintType.FilmCoating : PrintType.Unloading;
+        }
+        /// <summary>
+        /// 获取当前选择的打印机名称
+        /// </summary>
         /// <summary>
         /// 获取当前模板名称
         /// </summary>
@@ -236,6 +252,19 @@ namespace BarcodeLaminationPrint
                 AddLog($"❌ 上传模板失败: {ex.Message}");
             }
         }
+        /// <summary>
+        /// 打印类型选择变更事件
+        /// </summary>
+        private void PrintType_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((RadioButton)sender != null && ((RadioButton)sender).Checked)
+            {
+                UpdatePrinterDisplay();
+                UpdateTemplateDisplay();
+                AddLog($"✅ 切换到{(GetCurrentPrintType() == PrintType.FilmCoating ? "覆膜打印" : "下料打印")}模式");
+            }
+        }
+
 
         /// <summary>
         /// 更新打印机显示
@@ -317,32 +346,52 @@ namespace BarcodeLaminationPrint
             try
             {
                 // 检查模板是否存在
-                if (string.IsNullOrEmpty(_templatePath) || !File.Exists(_templatePath))
+                string templatePath = GetCurrentTemplatePath();
+                if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
                 {
                     AddLog("❌ 请先上传模板文件");
                     return;
                 }
 
                 // 检查打印机是否设置
-                if (string.IsNullOrEmpty(_printerName))
+                string printerName = _printerName;
+                if (string.IsNullOrEmpty(printerName))
                 {
                     AddLog("❌ 请先选择打印机");
                     return;
                 }
-                AddLog("开始测试打印...");
 
-                // 创建一个测试记录
-                var testRecord = new FilmCoatingRecord
+                AddLog($"开始{(GetCurrentPrintType() == PrintType.FilmCoating ? "覆膜打印" : "下料打印")}测试...");
+
+                if (GetCurrentPrintType() == PrintType.FilmCoating)
                 {
-                    Id = 999,
-                    NewERPCode = "TEST001",
-                    ProductPartDescription = "测试产品描述",
-                    Quantity = 100,
-                    BatchNumber = "BATCH001",
-                    PDADeviceId = "TestDevice"
-                };
+                    // 创建一个测试记录
+                    var testRecord = new FilmCoatingRecord
+                    {
+                        Id = 999,
+                        NewERPCode = "TEST001",
+                        ProductPartDescription = "测试产品描述",
+                        Quantity = 100,
+                        BatchNumber = "BATCH001",
+                        PDADeviceId = "TestDevice"
+                    };
 
-                Task.Run(() => ProcessPrintJob(testRecord));
+                    Task.Run(() => ProcessPrintJob(testRecord));
+                }
+                else
+                {
+                    // 创建下料打印测试记录
+                    var testRecord = new UnloadingRecord
+                    {
+                        Id = 999,
+                        ProductERPCode = "TEST002",
+                        ProductPartDescription = "测试下料产品",
+                        Quantity = 200,
+                        BatchNumber = "BATCH002"
+                    };
+
+                    Task.Run(() => ProcessPrintJob2(testRecord));
+                }
             }
             catch (Exception ex)
             {
@@ -423,14 +472,19 @@ namespace BarcodeLaminationPrint
         {
             try
             {
+                // 获取当前打印类型
+                PrintType currentPrintType = GetCurrentPrintType();
+
                 // 检查必要的设置
-                if (string.IsNullOrEmpty(_templatePath) || !File.Exists(_templatePath))
+                string templatePath = GetCurrentTemplatePath();
+                if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath))
                 {
                     AddLog("⚠️ 模板文件未设置，无法处理打印任务");
                     return;
                 }
 
-                if (string.IsNullOrEmpty(_printerName))
+                string printerName = _printerName;
+                if (string.IsNullOrEmpty(printerName))
                 {
                     AddLog("⚠️ 打印机未设置，无法处理打印任务");
                     return;
@@ -440,71 +494,112 @@ namespace BarcodeLaminationPrint
                 {
                     connection.Open();
 
-                    // 查询待打印的覆膜记录
-                    var query = @"
+                    if (currentPrintType == PrintType.FilmCoating)
+                    {
+                        // 查询待打印的覆膜记录
+                        // 查询待打印的下料记录
+                        var query = @"
                         SELECT TOP 1 * 
                         FROM FilmCoatingRecords 
                         WHERE Status = '待打印' 
                         ORDER BY CreatedTime ASC";
 
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        using (var reader = command.ExecuteReader())
+                        using (var command = new SqlCommand(query, connection))
                         {
-                            if (reader.Read())
+                            // 先读取第一条记录
+                            FilmCoatingRecord unloadingRecord = null;
+                            int? unloadingRecordId = null;
+                            string productERPCode = null;
+
+                            using (var reader = command.ExecuteReader())
                             {
-                                var printRecord = new FilmCoatingRecord
+                                if (reader.Read())
                                 {
-                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                                    OriginalERPCode = reader.GetString(reader.GetOrdinal("OriginalERPCode")),
-                                    NewERPCode = reader.GetString(reader.GetOrdinal("NewERPCode")),
-                                    ProductERPCode = reader.GetString(reader.GetOrdinal("ProductERPCode")),
-                                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
-                                    BatchNumber = reader.GetString(reader.GetOrdinal("BatchNumber")),
-                                    ProductPartDescription = reader.GetString(reader.GetOrdinal("ProductPartDescription")),
-                                    PrintTime = reader.GetDateTime(reader.GetOrdinal("PrintTime")),
-                                    PDADeviceId = reader.GetString(reader.GetOrdinal("PDADeviceId")),
-                                    CreatedTime = reader.GetDateTime(reader.GetOrdinal("CreatedTime")),
-                                    Status = reader.GetString(reader.GetOrdinal("Status"))
-                                };
+                                    unloadingRecordId = reader.GetInt32(reader.GetOrdinal("Id"));
+                                    productERPCode = reader.GetString(reader.GetOrdinal("NewERPCode"));
 
-                                AddLog($"📄 发现待打印记录 ID: {printRecord.Id}, ERP: {printRecord.NewERPCode}");
+                                    unloadingRecord = new FilmCoatingRecord
+                                    {
+                                        Id = unloadingRecordId.Value,
+                                        ProductERPCode = productERPCode,
+                                        ProductPartDescription = reader.GetString(reader.GetOrdinal("ProductPartDescription")),
+                                        Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                                        BatchNumber = reader.GetString(reader.GetOrdinal("BatchNumber")),
+                                        PrintTime = reader.GetDateTime(reader.GetOrdinal("PrintTime")),
+                                        CreatedTime = reader.GetDateTime(reader.GetOrdinal("CreatedTime")),
+                                        Status = reader.GetString(reader.GetOrdinal("Status"))
+                                    };
 
-                                // 处理打印任务
-                                Task.Run(() => ProcessPrintJob(printRecord));
+                                    AddLog($"📄 发现待打印下料记录 ID: {unloadingRecord.Id}, ERP: {unloadingRecord.ProductERPCode}");
+                                }
+                            } // 第一个DataReader在此处关闭
+                            if (unloadingRecord == null || string.IsNullOrEmpty(productERPCode))
+                            {
+                                return;
                             }
+                            Task.Run(() => ProcessPrintJob(unloadingRecord));
                         }
                     }
-
-                    // 查询待打印的下料记录
-                    query = @"
+                    else
+                    {
+                        // 查询待打印的下料记录
+                        // 查询待打印的记录
+                        var query = @"
                         SELECT TOP 1 * 
                         FROM UnloadingRecords 
-                        WHERE PrintStatus =0 
+                        WHERE PrintStatus = 0 
                         ORDER BY CreatedTime ASC";
 
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        using (var reader = command.ExecuteReader())
+                        using (var command = new SqlCommand(query, connection))
                         {
-                            if (reader.Read())
+                            // 先读取第一条记录
+                            UnloadingRecord unloadingRecord = null;
+                            int? unloadingRecordId = null;
+                            string productERPCode = null;
+
+                            using (var reader = command.ExecuteReader())
                             {
-                                var unloadingRecord = new UnloadingRecord
+                                if (reader.Read())
                                 {
-                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                                    ProductERPCode = reader.GetString(reader.GetOrdinal("ProductERPCode")),
-                                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
-                                    BatchNumber = reader.GetString(reader.GetOrdinal("BatchNumber")),
-                                    PrintTime = reader.GetDateTime(reader.GetOrdinal("PrintTime")),
-                                    CreatedTime = reader.GetDateTime(reader.GetOrdinal("CreatedTime")),
-                                    PrintStatus = reader.GetInt32(reader.GetOrdinal("PrintStatus"))
-                                };
+                                    unloadingRecordId = reader.GetInt32(reader.GetOrdinal("Id"));
+                                    productERPCode = reader.GetString(reader.GetOrdinal("ProductERPCode"));
 
-                                AddLog($"📄 发现待打印下料记录 ID: {unloadingRecord.Id}, ERP: {unloadingRecord.ProductERPCode}");
+                                    unloadingRecord = new UnloadingRecord
+                                    {
+                                        Id = unloadingRecordId.Value,
+                                        ProductERPCode = productERPCode,
+                                        ProductPartDescription = reader.GetString(reader.GetOrdinal("ProductPartDescription")),
+                                        Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                                        BatchNumber = reader.GetString(reader.GetOrdinal("BatchNumber")),
+                                        PrintTime = reader.GetDateTime(reader.GetOrdinal("PrintTime")),
+                                        CreatedTime = reader.GetDateTime(reader.GetOrdinal("CreatedTime")),
+                                        PrintStatus = reader.GetInt32(reader.GetOrdinal("PrintStatus"))
+                                    };
 
-                                // 处理打印任务
-                                Task.Run(() => ProcessPrintJob2(unloadingRecord));
+                                   // AddLog($"📄 发现待打印{recordType}记录 ID: {unloadingRecord.Id}, ERP: {unloadingRecord.ProductERPCode}");
+                                }
+                            } // DataReader在此处关闭
+                            
+                            // 如果没有找到记录，直接返回
+                            if (unloadingRecord == null || string.IsNullOrEmpty(productERPCode))
+                            {
+                                return;
                             }
+
+                            // 查询材料信息
+                            bool hasMaterialInfo = TryGetMaterialInfo(connection, productERPCode, unloadingRecord);
+
+                            if (hasMaterialInfo)
+                            {
+                                AddLog($"📦 找到材料信息，更新包装数量: {unloadingRecord.Quantity}");
+                            }
+                            else
+                            {
+                                AddLog($"⚠️ 未找到材料信息，使用原始数量: {unloadingRecord.Quantity}");
+                            }
+
+                            // 处理打印任务
+                            Task.Run(() => ProcessPrintJob2(unloadingRecord));
                         }
                     }
                 }
@@ -513,6 +608,44 @@ namespace BarcodeLaminationPrint
             {
                 AddLog($"❌ 数据库查询失败: {ex.Message}");
             }
+        }
+
+        private bool TryGetMaterialInfo(SqlConnection connection, string productERPCode, UnloadingRecord unloadingRecord)
+        {
+            try
+            {
+                // 使用参数化查询避免SQL注入
+                var materialQuery = @"
+            SELECT TOP 1 * 
+            FROM Materials 
+            WHERE ProductERPCode = @ProductERPCode
+            ORDER BY CreateTime ASC";
+
+                using (var materialCommand = new SqlCommand(materialQuery, connection))
+                {
+                    materialCommand.Parameters.AddWithValue("@ProductERPCode", productERPCode);
+
+                    using (var materialReader = materialCommand.ExecuteReader())
+                    {
+                        if (materialReader.Read())
+                        {
+                            // 如果PackingQuantity列存在，则更新数量
+                            int packingQuantityOrdinal = materialReader.GetOrdinal("PackingQuantity");
+                            if (!materialReader.IsDBNull(packingQuantityOrdinal))
+                            {
+                                unloadingRecord.Quantity = materialReader.GetInt32(packingQuantityOrdinal);
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AddLog($"⚠️ 查询材料信息失败: {ex.Message}");
+            }
+
+            return false;
         }
         private async Task ProcessPrintJob(FilmCoatingRecord printRecord) 
         {
