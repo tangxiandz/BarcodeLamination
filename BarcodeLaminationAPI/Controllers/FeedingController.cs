@@ -9,10 +9,12 @@ namespace PDA.Api.Controllers
     public class FeedingController : ControllerBase
     {
         private readonly IFeedingService _feedingService;
+        private readonly IMaterialService _materialService;
 
-        public FeedingController(IFeedingService feedingService)
+        public FeedingController(IFeedingService feedingService, IMaterialService materialService)
         {
             _feedingService = feedingService;
+            _materialService = materialService;
         }
 
         /// <summary>
@@ -100,6 +102,16 @@ namespace PDA.Api.Controllers
             try
             {
                 var records = await _feedingService.GetValidFeedingRecordsAsync();
+                var MaterialList =await _materialService.GetMaterialsAsync();
+                foreach (var item in records)
+                {
+                    var material = MaterialList.FirstOrDefault(m => m.FabricERPCode == item.FilmCoatingQRCode);
+                    if (material != null)
+                    {
+                        item.FilmCoatingQuantity = material.PackingQuantity;
+                        item.FilmCoatingCount = material.FabricRollCount;
+                    }
+                }
                 return Ok(records);
             }
             catch (Exception ex)

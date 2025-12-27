@@ -27,7 +27,6 @@ namespace MaterialsController.Controllers
                 {
                     return BadRequest(new { message = "二维码内容不能为空" });
                 }
-
                 var result = await _filmCoatingService.ProcessFilmCoatingAsync(request);
 
                 if (result.Success)

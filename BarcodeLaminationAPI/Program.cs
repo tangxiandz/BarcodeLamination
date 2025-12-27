@@ -58,11 +58,12 @@ builder.Services.AddSingleton<IBarTenderPrintService, BarTenderPrintService>();
 var app = builder.Build();
 
 // 配置HTTP请求管道
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+  
+//}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowAll");
 app.UseAuthorization();
@@ -71,9 +72,10 @@ app.MapControllers();
 // 初始化数据库（开发环境）
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+
 }
+using var scope = app.Services.CreateScope();
+var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+context.Database.EnsureCreated();
 
 app.Run();

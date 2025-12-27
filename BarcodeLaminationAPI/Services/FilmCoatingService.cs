@@ -151,6 +151,10 @@ namespace BarcodeLaminationAPI.Services
             {
                 query = query.Where(r => r.BatchNumber.Contains(request.BatchNumber));
             }
+            if (!string.IsNullOrEmpty(request.OriginalERPCode))
+            {
+                query = query.Where(r => r.OriginalERPCode.Contains(request.OriginalERPCode));
+            }
 
             // 排序
             query = query.OrderByDescending(r => r.PrintTime);
