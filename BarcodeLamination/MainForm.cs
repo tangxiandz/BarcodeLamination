@@ -522,6 +522,7 @@ namespace BarcodeLaminationPrint
                                     {
                                         Id = unloadingRecordId.Value,
                                         ProductERPCode = productERPCode,
+                                        NewERPCode= productERPCode,
                                         ProductPartDescription = reader.GetString(reader.GetOrdinal("ProductPartDescription")),
                                         Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                                         BatchNumber = reader.GetString(reader.GetOrdinal("BatchNumber")),
@@ -566,7 +567,7 @@ namespace BarcodeLaminationPrint
 
                                     unloadingRecord = new UnloadingRecord
                                     {
-                                        Id = unloadingRecordId.Value,
+                                        Id = unloadingRecordId.Value,                                        
                                         ProductERPCode = productERPCode,
                                         ProductPartDescription = reader.GetString(reader.GetOrdinal("ProductPartDescription")),
                                         Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
@@ -576,7 +577,6 @@ namespace BarcodeLaminationPrint
                                         PrintStatus = reader.GetInt32(reader.GetOrdinal("PrintStatus"))
                                     };
 
-                                   // AddLog($"📄 发现待打印{recordType}记录 ID: {unloadingRecord.Id}, ERP: {unloadingRecord.ProductERPCode}");
                                 }
                             } // DataReader在此处关闭
                             
@@ -682,7 +682,7 @@ namespace BarcodeLaminationPrint
                 // 3. 使用模板绑定方式填充数据
                 AddLog("📝 步骤3: 使用模板绑定填充数据");
                 List<customproductattributes> customproductattributeslist=  new List<customproductattributes>();
-                customproductattributeslist.Add(new customproductattributes() { ID=1,ProductId=1,Name= "ERPCode",Value= "NewERPCode",});
+                customproductattributeslist.Add(new customproductattributes() { ID=1,ProductId=1,Name= "NewERPCode", Value= "NewERPCode",});
                 customproductattributeslist.Add(new customproductattributes() { ID = 1, ProductId = 1, Name = "ProductPartDescription", Value = "ProductPartDescription", });
                 customproductattributeslist.Add(new customproductattributes() { ID = 1, ProductId = 1, Name = "Quantity", Value = "Quantity", });
                 customproductattributeslist.Add(new customproductattributes() { ID = 1, ProductId = 1, Name = "BatchNumberCode", Value = "BatchNumberCode", });
