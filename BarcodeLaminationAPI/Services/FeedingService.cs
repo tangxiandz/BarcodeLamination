@@ -23,7 +23,7 @@ namespace BarcodeLaminationAPI.Services
             try
             {
                 // 1. 获取物料信息
-                var material = await _materialService.GetMaterialByFabricERPCodeAsync(request.ProductERPCode);
+                var material = await _materialService.GetMaterialByFabricERPCodeAsync(request.ProductERPCode,request.MoldQRCode);
                 if (material == null)
                 {
                     return new FeedingResponse

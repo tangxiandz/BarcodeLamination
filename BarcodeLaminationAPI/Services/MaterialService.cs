@@ -83,10 +83,21 @@ namespace BarcodeLaminationAPI.Services
             return await _context.Materials
                 .FirstOrDefaultAsync(m => m.ProductERPCode == productERPCode && m.IsActive);
         }
+        public async Task<Material> GetMaterialByProductERPCodeAsync(string productERPCode,string FabricERPCode)
+        {
+            return await _context.Materials
+                .FirstOrDefaultAsync(m => m.ProductERPCode == productERPCode&&m.FabricERPCode== FabricERPCode && m.IsActive);
+        }
         public async Task<Material> GetMaterialByFabricERPCodeAsync(string FabricERPCode)
         {
             return await _context.Materials
                 .FirstOrDefaultAsync(m => m.FabricERPCode == FabricERPCode && m.IsActive);
+        }
+
+        public async Task<Material> GetMaterialByFabricERPCodeAsync(string FabricERPCode,string MoldNumber)
+        {
+            return await _context.Materials
+                .FirstOrDefaultAsync(m => m.FabricERPCode == FabricERPCode&&m.MoldNumber== MoldNumber && m.IsActive);
         }
 
         public async Task<Material> GetMaterialByMoldNumberAsync(string moldNumber)

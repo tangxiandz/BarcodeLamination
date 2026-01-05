@@ -8,7 +8,9 @@ namespace BarcodeLaminationAPI.Services
         Task<List<Material>> GetMaterialsAsync();
         Task<Material> GetMaterialByIdAsync(int id);
         Task<Material> GetMaterialByProductERPCodeAsync(string productERPCode);
+        Task<Material> GetMaterialByProductERPCodeAsync(string productERPCode,string FabricERPCode);
         Task<Material> GetMaterialByFabricERPCodeAsync(string FabricERPCode);
+        Task<Material> GetMaterialByFabricERPCodeAsync(string FabricERPCode,string MoldNumber);
         Task<Material> GetMaterialByMoldNumberAsync(string moldNumber);
         Task<Material> CreateMaterialAsync(MaterialRequest request);
         Task<Material> UpdateMaterialAsync(int id, MaterialRequest request);
