@@ -59,7 +59,7 @@ namespace BarcodeLaminationAPI.Services
                     ProductERPCode = material.ProductERPCode,
                     Quantity = request.Quantity,
                     BatchNumber = batchNumber,
-                    ProductPartDescription = material.ProductPartDescription,
+                    ProductPartDescription = material.FabricPartDescription,
                     PrintedBy = request.PrintedBy,
                     PDADeviceId = request.PDADeviceId,
                     Status= "待打印",
@@ -71,18 +71,18 @@ namespace BarcodeLaminationAPI.Services
 
 
                 // 6. 准备打印数据
-                var printData = new FilmCoatingPrintData
-                {
-                    ErpCode = material.ProductERPCode,
-                    ProductPartDescription = material.ProductPartDescription ?? request.ProductPartDescription,
-                    OriginalQuantity = request.Quantity,
-                    NewQuantity = request.Quantity,
-                    NewBatch= batchNumber,
-                    NewQRCode = newQRCode,
-                    PrintedBy = record.PrintedBy,
-                    Copies = 1,
-                    GenerateQRCode = true
-                };
+                //var printData = new FilmCoatingPrintData
+                //{
+                //    ErpCode = material.ProductERPCode,
+                //    ProductPartDescription = material.ProductPartDescription ?? request.ProductPartDescription,
+                //    OriginalQuantity = request.Quantity,
+                //    NewQuantity = request.Quantity,
+                //    NewBatch= batchNumber,
+                //    NewQRCode = newQRCode,
+                //    PrintedBy = record.PrintedBy,
+                //    Copies = 1,
+                //    GenerateQRCode = true
+                //};
                 response.Success = true;
                 response.Message = "覆膜标签打印成功";
                 response.NewQRCode = newQRCode;
